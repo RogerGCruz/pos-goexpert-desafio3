@@ -36,6 +36,7 @@ type Config struct {
 }
 
 type ResolverRoot interface {
+	Query() QueryResolver
 	Mutation() MutationResolver
 }
 
@@ -55,11 +56,16 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
+		Orders func(childComplexity int) int
 	}
 }
 
 type MutationResolver interface {
 	CreateOrder(ctx context.Context, input *model.OrderInput) (*model.Order, error)
+}
+
+type QueryResolver interface {
+	Orders(ctx context.Context) ([]*model.Order, error)
 }
 
 type executableSchema struct {
@@ -76,6 +82,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	ec := executionContext{nil, e}
 	_ = ec
 	switch typeName + "." + field {
+
+	case "Query.orders":
+		if e.complexity.Query.Orders == nil {
+			break
+		}
+
+		return e.complexity.Query.Orders(childComplexity), true
 
 	case "Mutation.createOrder":
 		if e.complexity.Mutation.CreateOrder == nil {
@@ -508,6 +521,63 @@ func (ec *executionContext) fieldContext_Order_FinalPrice(ctx context.Context, f
 			return nil, errors.New("field of type Float does not have child fields")
 		},
 	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_orders(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_orders(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx
+		return ec.resolvers.Query().Orders(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Order)
+	fc.Result = res
+	return ec.marshalOrderSlice(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_orders(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Order_id(ctx, field)
+			case "Price":
+				return ec.fieldContext_Order_Price(ctx, field)
+			case "Tax":
+				return ec.fieldContext_Order_Tax(ctx, field)
+			case "FinalPrice":
+				return ec.fieldContext_Order_FinalPrice(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Order", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
 	return fc, nil
 }
 
@@ -2569,6 +2639,11 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Query")
+		case "orders":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Query_orders(ctx, field)
+			})
 		case "__type":
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
@@ -3239,6 +3314,21 @@ func (ec *executionContext) marshalOOrder2ᚖgithubᚗcomᚋdevfullcycleᚋ20ᚑ
 		return graphql.Null
 	}
 	return ec._Order(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOrderSlice(ctx context.Context, sel ast.SelectionSet, v []*model.Order) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	for i, item := range v {
+		if item == nil {
+			ret[i] = graphql.Null
+			continue
+		}
+		ret[i] = ec.marshalOOrder2ᚖgithubᚗcomᚋdevfullcycleᚋ20ᚑCleanArchᚋgraphᚋmodelᚐOrder(ctx, sel, item)
+	}
+	return ret
 }
 
 func (ec *executionContext) unmarshalOOrderInput2ᚖgithubᚗcomᚋdevfullcycleᚋ20ᚑCleanArchᚋgraphᚋmodelᚐOrderInput(ctx context.Context, v interface{}) (*model.OrderInput, error) {

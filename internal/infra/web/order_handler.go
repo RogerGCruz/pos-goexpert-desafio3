@@ -6,6 +6,7 @@ import (
 
 	"github.com/devfullcycle/20-CleanArch/internal/entity"
 	"github.com/devfullcycle/20-CleanArch/internal/usecase"
+	"github.com/devfullcycle/20-CleanArch/internal/usecase/dto"
 	"github.com/devfullcycle/20-CleanArch/pkg/events"
 )
 
@@ -28,7 +29,7 @@ func NewWebOrderHandler(
 }
 
 func (h *WebOrderHandler) Create(w http.ResponseWriter, r *http.Request) {
-	var dto usecase.OrderInputDTO
+	var dto dto.OrderInputDTO
 	err := json.NewDecoder(r.Body).Decode(&dto)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -37,6 +38,20 @@ func (h *WebOrderHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	createOrder := usecase.NewCreateOrderUseCase(h.OrderRepository, h.OrderCreatedEvent, h.EventDispatcher)
 	output, err := createOrder.Execute(dto)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	err = json.NewEncoder(w).Encode(output)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func (h *WebOrderHandler) List(w http.ResponseWriter, r *http.Request) {
+	listOrder := usecase.NewListOrderUseCase(h.OrderRepository)
+	output, err := listOrder.Execute()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

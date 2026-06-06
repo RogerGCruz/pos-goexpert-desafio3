@@ -8,6 +8,7 @@ package main
 
 import (
 	"database/sql"
+
 	"github.com/devfullcycle/20-CleanArch/internal/entity"
 	"github.com/devfullcycle/20-CleanArch/internal/event"
 	"github.com/devfullcycle/20-CleanArch/internal/infra/database"
@@ -24,6 +25,12 @@ func NewCreateOrderUseCase(db *sql.DB, eventDispatcher events.EventDispatcherInt
 	orderCreated := event.NewOrderCreated()
 	createOrderUseCase := usecase.NewCreateOrderUseCase(orderRepository, orderCreated, eventDispatcher)
 	return createOrderUseCase
+}
+
+func NewListOrderUseCase(db *sql.DB) *usecase.ListOrderUseCase {
+	orderRepository := database.NewOrderRepository(db)
+	listOrderUseCase := usecase.NewListOrderUseCase(orderRepository)
+	return listOrderUseCase
 }
 
 func NewWebOrderHandler(db *sql.DB, eventDispatcher events.EventDispatcherInterface) *web.WebOrderHandler {
